@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: it_optimizer_postgres
+    environment:
+      POSTGRES_USER: itoptimizer
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: it_optimization
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U itoptimizer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # TimescaleDB (PostgreSQL with time-series extension)
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: it_optimizer_timescale
+    environment:
+      POSTGRES_USER: itoptimizer
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: metrics_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U itoptimizer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB
+  mongodb:
+    image: mongo:7
+    container_name: it_optimizer_mongo
+    environment:
+      MONGO_INITDB_DATABASE: it_optimization
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: it_optimizer_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  timescale_data:
+  mongo_data:
+  redis_data:
